@@ -105,7 +105,7 @@ class SegmentationDataset(object):
 
     def im2double(self, im_: np.ndarray) -> np.ndarray:
         info = np.iinfo(im_.dtype)  # Get the data type of the input image
-        return im_.astype(np.float) / info.max  # Divide all values by the largest possible value in the datatype
+        return im_.astype(np.float64) / info.max  # Divide all values by the largest possible value in the datatype
 
     def np2Tensor(self, tensor):
         if len(tensor.shape) == 3:
