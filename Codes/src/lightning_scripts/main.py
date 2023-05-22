@@ -83,16 +83,16 @@ if "train" in args.mode:
     testTube_logger = pl.loggers.TestTubeLogger(save_dir=log_dir,
                                                 name="TestTube_{}_{}".format(args.model, args.dataset)
                                                 )
-
-    wandb_logger = pl.loggers.wandb.WandbLogger(name="Model: {} Datset: {} Des : {} ".format(args.model,
-                                                                                             args.dataset,
-                                                                                             args.wandb_name_ext, ),
-                                                id=args.wandb_id,
-                                                project="Thermal Segmentation",
-                                                entity="tufts",
-                                                offline=args.debug,
-                                                save_dir=log_dir,
-                                                )
+    if not args.train_only:
+        wandb_logger = pl.loggers.wandb.WandbLogger(name="Model: {} Datset: {} Des : {} ".format(args.model,
+                                                                                                 args.dataset,
+                                                                                                 args.wandb_name_ext, ),
+                                                    id=args.wandb_id,
+                                                    project="Thermal Segmentation",
+                                                    entity="tufts",
+                                                    offline=args.debug,
+                                                    save_dir=log_dir,
+                                                    )
 
     if args.distributed_backend == "ddp":
         args.train_batch_size = max(1, int(args.train_batch_size / max(1, args.gpus)))
@@ -144,15 +144,22 @@ if "train" in args.mode:
                                                                                   )
                                     )
 
+    if args.train_only:
+        accelerator = None
+        loggers = [testTube_logger, ]
+    else:
+        accelerator = args.distributed_backend
+        loggers = [testTube_logger, wandb_logger]
+
     trainer = pl.Trainer(default_root_dir=args.save_dir,
                          resume_from_checkpoint=args.resume,
                          gpus=args.gpus,
                          num_nodes=args.num_nodes,
-                         logger=[testTube_logger, wandb_logger],
+                         logger=loggers,
                          max_epochs=args.epochs,
                          amp_level="O0",
                          sync_batchnorm=True,
-                         distributed_backend=args.distributed_backend,
+                         accelerator=accelerator,  # distributed_backend is deprecated
                          accumulate_grad_batches=args.accumulate_grad_batches,
                          callbacks=checkpoint_callbacks,
                          fast_dev_run=args.debug,
@@ -166,7 +173,7 @@ if "train" in args.mode:
     '''
     if args.mode == "train_test":
         trainer_v2 = pl.Trainer(fast_dev_run=args.debug,
-                                distributed_backend="dp",
+                                accelerator="dp",
                                 gpus=1,
                                 deterministic=True,
                                 callbacks=ProgressBar(logger),
@@ -225,7 +232,7 @@ elif args.mode == "test":
     trainer = pl.Trainer(gpus=args.gpus,
                          num_nodes=args.num_nodes,
                          max_epochs=1,
-                         distributed_backend="dp",
+                         accelerator="dp",
                          amp_level="O0",
                          callbacks=[ProgressBar(logger)],
                          fast_dev_run=False,
