@@ -74,9 +74,9 @@ def to_python_float(t):
 
 
 def as_numpy(obj):
-    if isinstance(obj, collections.Sequence):
+    if isinstance(obj, collections.abc.Sequence):
         return [as_numpy(v) for v in obj]
-    elif isinstance(obj, collections.Mapping):
+    elif isinstance(obj, collections.abc.Mapping):
         return {k: as_numpy(v) for k, v in obj.items()}
     elif isinstance(obj, Variable):
         return obj.data.cpu().numpy()
