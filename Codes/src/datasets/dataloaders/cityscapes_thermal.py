@@ -22,7 +22,7 @@ class CityscapesCombineThermalDataset(SegmentationDataset):
     NUM_CLASS = 19
     IGNORE_INDEX = -1
     NAME = "cityscapes_thermal"
-    BASE_FOLDER = 'Cityscapes_thermal'
+    BASE_FOLDER = ''  # 'Cityscapes_thermal'
 
     def __init__(self, root='./datasets/Cityscapes',
                  split='train',

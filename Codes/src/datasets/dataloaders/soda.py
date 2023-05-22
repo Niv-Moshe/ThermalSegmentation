@@ -23,7 +23,7 @@ class SODADataset(SegmentationDataset):
     NUM_CLASS = 21
     IGNORE_INDEX = 255
     NAME = "SODA"
-    BASE_FOLDER = 'InfraredSemanticLabel-20210430T150555Z-001/SODA'
+    BASE_FOLDER = ''  # 'InfraredSemanticLabel-20210430T150555Z-001/SODA'
 
     def __init__(self, root='./datasets/InfraredSemanticLabel-20210430T150555Z-001/SODA',
                  split='train',
