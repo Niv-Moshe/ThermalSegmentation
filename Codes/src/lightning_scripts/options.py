@@ -45,6 +45,11 @@ def parse_args():
                         default=True,
                         help='Use pretrained ImageNet backbone')
 
+    parser.add_argument('--pretrain-checkpoint',
+                        type=str,
+                        default=None,
+                        help='Use pretrained model on cityscapes for fine tuning')
+
     parser.add_argument('--dilation',
                         type=str2bool,
                         default=False,
