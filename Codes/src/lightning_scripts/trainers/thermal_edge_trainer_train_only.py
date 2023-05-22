@@ -33,7 +33,7 @@ from core.utils.optimizer_scheduler_helper import (make_optimizer,
 from core.utils.utils import as_numpy, save_model_summary, to_python_float
 from core.utils.visualize import get_color_pallete
 from datasets import get_segmentation_dataset
-from options import parse_args
+# from options import parse_args
 from pytorch_lightning.core import LightningModule
 from pytorch_lightning.loggers import TestTubeLogger
 from core.metrics import pl_IOU
