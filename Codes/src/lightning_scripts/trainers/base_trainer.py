@@ -64,7 +64,8 @@ class BaseTrainer(pl.LightningModule):
 
         save_model_summary(self.model, self.ckp.get_path('logs'))
 
-        self._preload_complete_data()
+        if self.hparams.args.mode != 'test':
+            self._preload_complete_data()
 
         if train:
             self.criterion = get_segmentation_loss(self.hparams.args.model,
