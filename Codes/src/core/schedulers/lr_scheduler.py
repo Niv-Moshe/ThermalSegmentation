@@ -185,7 +185,7 @@ class WarmupPolyLR(torch.optim.lr_scheduler._LRScheduler):
                 raise ValueError("Unknown warmup type.")
             return [self.target_lr + (base_lr - self.target_lr) * warmup_factor for base_lr in self.base_lrs]
         factor = (1 - T / N) ** self.power
-        return [np.float(self.target_lr + (base_lr - self.target_lr) * factor) for base_lr in self.base_lrs]
+        return [np.float64(self.target_lr + (base_lr - self.target_lr) * factor) for base_lr in self.base_lrs]
 
 
 if __name__ == '__main__':
