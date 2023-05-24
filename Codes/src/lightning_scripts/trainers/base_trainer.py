@@ -27,7 +27,7 @@ from core.utils.json_extension import save_to_json_pretty
 from core.utils.optimizer_scheduler_helper import (make_optimizer,
                                                    make_scheduler)
 from core.utils.utils import as_numpy, save_model_summary, to_python_float
-from core.utils.visualize import get_color_pallete
+from core.utils.visualize import get_color_pallete, cityspallete, scutseg, mfn, soda, generic
 from datasets import get_segmentation_dataset
 from torchmetrics import ConfusionMatrix as pl_ConfusionMatrix
 
@@ -174,9 +174,14 @@ class BaseTrainer(pl.LightningModule):
                        'root': self.hparams.args.dataset_path,
                        'base_size': None}
 
+        # whether GT exists or not
+        if os.path.exists(os.path.join(self.hparams.args.dataset_path, 'mask')):
+            mode = 'testval'
+        else:
+            mode = 'test'
         self.test_dataset = get_segmentation_dataset(self.hparams.args.dataset,
                                                      split='test',
-                                                     mode='testval',
+                                                     mode=mode,
                                                      **data_kwargs)
 
         test_sampler = make_data_sampler(dataset=self.test_dataset,
@@ -249,10 +254,14 @@ class BaseTrainer(pl.LightningModule):
             base_path = os.path.join(self.seg_dir, str(self.current_epoch))
             std = self.val_dataset.std
             mean = self.val_dataset.mean
+            class_names = self.test_dataset.class_names
+            dataset_name = self.test_dataset.NAME
         elif calframe == 'test_step':
             base_path = self.seg_dir
             std = self.test_dataset.std
             mean = self.test_dataset.mean
+            class_names = self.test_dataset.class_names
+            dataset_name = self.test_dataset.NAME
         else:
             ValueError('Standard Deviation and Mean not found')
 
@@ -282,18 +291,61 @@ class BaseTrainer(pl.LightningModule):
                 #            np.array(get_color_pallete(groundtruth[i], self.hparams.args.dataset)))
                 plt.imsave(base_path + '/Pred_{}.png'.format(os.path.splitext(filename[i])[0]),
                            np.array(get_color_pallete(prediction[i], self.hparams.args.dataset)))
+        self.save_segmentation_legend(dataset_name, class_names, base_path)
 
-    def save_edge_images(self, original, groundtruth, prediction, edge_map, filename):
+    @staticmethod
+    def save_segmentation_legend(dataset_name, class_names, base_path):
+        if 'cityscapes' in dataset_name.lower():
+            classes_dict_rgb = cityspallete
+        elif dataset_name.lower() == 'soda':
+            classes_dict_rgb = soda
+        elif dataset_name.lower() == 'mfn':
+            classes_dict_rgb = mfn
+        elif dataset_name.lower() == 'scutseg':
+            classes_dict_rgb = scutseg
+        else:
+            classes_dict_rgb = generic
+
+        amount = 480 // len(class_names)
+        label_mask = np.zeros((len(class_names), len(class_names) * amount))
+        for key, value in classes_dict_rgb.items():  # filling each row with class values
+            label_mask[key, :] = key
+        r = label_mask.copy()
+        g = label_mask.copy()
+        b = label_mask.copy()
+        for key, value in soda.items():
+            r[label_mask == key] = classes_dict_rgb[key][0]
+            g[label_mask == key] = classes_dict_rgb[key][1]
+            b[label_mask == key] = classes_dict_rgb[key][2]
+        r = np.repeat(r, repeats=amount, axis=0)
+        g = np.repeat(g, repeats=amount, axis=0)
+        b = np.repeat(b, repeats=amount, axis=0)
+        rgb = np.zeros((label_mask.shape[0] * amount, label_mask.shape[1], 3))
+        rgb[:, :, 0] = r
+        rgb[:, :, 1] = g
+        rgb[:, :, 2] = b
+        rgb = rgb.astype(np.uint8)
+        plt.title("Classes segmentation colors")
+        plt.yticks(ticks=list(range(1, len(class_names) * amount + 1, amount)), labels=class_names)
+        plt.xticks(ticks=list(range(1, len(class_names) * amount + 1, amount)), labels=[''] * len(class_names))
+        plt.imshow(rgb)
+        plt.savefig(base_path + '/segmentation_legend.png')
+
+    def save_edge_images(self, original, groundtruth=None, prediction=None, edge_map=None, filename=None):
         calframe = inspect.getouterframes(inspect.currentframe(), 2)[1][3]
         if calframe == 'validation_step':
             base_path = os.path.join(self.seg_dir, str(self.current_epoch))
             std = self.val_dataset.std
             mean = self.val_dataset.mean
+            class_names = self.test_dataset.class_names
+            dataset_name = self.test_dataset.NAME
 
         elif calframe == 'test_step':
             base_path = self.seg_dir
             std = self.test_dataset.std
             mean = self.test_dataset.mean
+            class_names = self.test_dataset.class_names
+            dataset_name = self.test_dataset.NAME
         else:
             ValueError('Standard Deviation and Mean not found')
 
@@ -330,6 +382,9 @@ class BaseTrainer(pl.LightningModule):
                            np.array(get_color_pallete(prediction[i], self.hparams.args.dataset)))
                 plt.imsave(base_path + '/Edges_{}.png'.format(os.path.splitext(filename[i])[0]),
                            np.array(edge_map[i][0]))
+        # saving segmentation legend pic
+        if not os.path.isfile(base_path + '/segmentation_legend.png'):
+            self.save_segmentation_legend(dataset_name, class_names, base_path)
 
     def load_weights_from_checkpoint(self, checkpoint: str) -> None:
         def check_mismatch(model_dict, pretrained_dict) -> None:
