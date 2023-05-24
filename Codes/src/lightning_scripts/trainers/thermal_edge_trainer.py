@@ -126,27 +126,39 @@ class SegmentationLightningModel(BaseTrainer):
                                          if hasattr(self.trainer, 'test_name')
                                          else 'Segmented_images/test/')
 
-        images, target, edges, filename = batch
+        if len(batch) == 4:
+            self.only_inference = False
+            images, target, edges, filename = batch
+        else:
+            self.only_inference = True
+            images, filename = batch
         output = self.forward(images)
 
         class_map, edge_map = output
         class_map = class_map[0] if isinstance(class_map, tuple) or isinstance(class_map, list) else class_map
-        class_map = upsample_output(class_map, target)
-        edge_map = upsample_output(edge_map, target)
+        if len(batch) == 4:
+            class_map = upsample_output(class_map, target)
+            edge_map = upsample_output(edge_map, target)
 
         class_map = torch.argmax(class_map.long(), 1)
-        edge_pred = torch.mean(((edge_map > 0) == edges).float(), dim=[1, 2, 3])
-
-        self.test_confmat.update(preds=class_map, target=target)
-        self.test_IOU.update(preds=class_map, target=target)
-        self.test_edge_accuracy.update(edge_pred)
+        if len(batch) == 4:  # got gt, else just for inference
+            edge_pred = torch.mean(((edge_map > 0) == edges).float(), dim=[1, 2, 3])
+            self.test_confmat.update(preds=class_map, target=target)
+            self.test_IOU.update(preds=class_map, target=target)
+            self.test_edge_accuracy.update(edge_pred)
 
         if self.hparams.args.save_images:
-            image_dict = {'original': as_numpy(images),
-                          'groundtruth': as_numpy(target),
-                          'prediction': as_numpy(class_map),
-                          'edge_map': as_numpy(edge_map),
-                          'filename': filename}
+            if len(batch) == 4:  # got gt, else just for inference
+                image_dict = {'original': as_numpy(images),
+                              'groundtruth': as_numpy(target),
+                              'prediction': as_numpy(class_map),
+                              'edge_map': as_numpy(edge_map),
+                              'filename': filename}
+            else:
+                image_dict = {'original': as_numpy(images),
+                              'prediction': as_numpy(class_map),
+                              'edge_map': as_numpy(edge_map),
+                              'filename': filename}
 
             self.save_edge_images(**image_dict)
 
@@ -154,6 +166,9 @@ class SegmentationLightningModel(BaseTrainer):
 
     def test_epoch_end(self, outputs):
         # https://stackoverflow.com/questions/20927368/how-to-normalize-a-confusion-matrix
+
+        if self.only_inference:
+            return
 
         def accuracy_(confusion_matrix):
             acc = confusion_matrix.diag() / confusion_matrix.sum(1)
