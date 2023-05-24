@@ -27,7 +27,7 @@ class SegmentationDataset(object):
         self.edge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT,
                                                      (edge_radius, edge_radius))
 
-        if self.mode != 'testval':
+        if self.mode != 'testval' and self.mode != 'test':
             self.sizes = dict(zip(crop_size, base_size))
 
     def _val_sync_transform(self, img, mask, edge, crop_size=None):
