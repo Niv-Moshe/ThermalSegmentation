@@ -43,7 +43,8 @@ class SODADataset(SegmentationDataset):
         self.std = [0.18772296, 0.18772296, 0.18772296]
 
         self.images, self.mask_paths, self.edge_paths = _get_soda_pairs(self.root, self.split, logger)
-        assert (len(self.images) == len(self.mask_paths))
+        if self.mode != 'test':
+            assert (len(self.images) == len(self.mask_paths))
 
         if len(self.images) == 0:
             raise RuntimeError("Found 0 images in subfolders of:" + root + "\n")
@@ -150,7 +151,13 @@ def _get_soda_pairs(folder, split='train', logger=None):
                         mask_paths.append(maskpath)
                         edge_paths.append(edgepath)
                     else:
-                        print('cannot find the image, mask, or edge:', imgpath, maskpath, edgepath)
+                        if split == 'test':
+                            if os.path.isfile(imgpath):
+                                img_paths.append(imgpath)
+                            else:
+                                print(f'cannot find the image {imgpath} to test on')
+                        else:  # we're not only testing (inference only - no GT)
+                            print('cannot find the image, mask, or edge:', imgpath, maskpath, edgepath)
         if logger is not None:
             logger.info('Found {} images in the folder {}'.format(len(img_paths), img_folder))
         return img_paths, mask_paths, edge_paths
