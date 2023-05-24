@@ -32,6 +32,13 @@ Codes/src/.spyproject
 Codes/Results_/
 Test_Results/
 Codes/src/pretrained_models/
+raw_dataset/
+processed_dataset/
+soda/
+tevel/
+Training_Paper/
+lightning_logs/
+venv/
 
 
 # PyInstaller
