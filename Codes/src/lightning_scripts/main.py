@@ -11,7 +11,7 @@ import os
 import sys
 
 
-os.system("wandb login ")
+# os.system("wandb login ")
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.abspath(os.path.dirname(currentdir))
 sys.path.append(parentdir)
@@ -54,45 +54,45 @@ if "train" in args.mode:
             logger.info("Resuming from previous last checkpoint\n")
             args.resume = os.path.join(ckpt_dir, "last.ckpt")
 
-    if args.wandb_id is None:
-        wandb_text_file = os.path.join(log_dir, "wandb_id.txt")
-        if os.path.isfile(wandb_text_file):
-            with open(wandb_text_file, "r") as f:
-                for line in f:  # Read line-by-line
-                    args.wandb_id = (
-                        line.strip()
-                    )  # Strip the leading/trailing whitespaces and newline
-            msg = ("-" * 50
-                   + "\nUsing existing WANDB ID\n {} \n ".format(args.wandb_id)
-                   + "-" * 50
-                   )
-        else:
-            import wandb
-            args.wandb_id = wandb.util.generate_id()
-            with open(wandb_text_file, "a") as f:
-                f.write(args.wandb_id)
-            msg = (
-                "-" * 50
-                + "\nNew WANDB ID GENERATED\n {} \n Please use the above id for resuming\n".format(
-                    args.wandb_id
-                ) +
-                "-" * 50
-            )
-        logger.info(msg)
+    # if args.wandb_id is None:
+    #     wandb_text_file = os.path.join(log_dir, "wandb_id.txt")
+    #     if os.path.isfile(wandb_text_file):
+    #         with open(wandb_text_file, "r") as f:
+    #             for line in f:  # Read line-by-line
+    #                 args.wandb_id = (
+    #                     line.strip()
+    #                 )  # Strip the leading/trailing whitespaces and newline
+    #         msg = ("-" * 50
+    #                + "\nUsing existing WANDB ID\n {} \n ".format(args.wandb_id)
+    #                + "-" * 50
+    #                )
+    #     else:
+    #         import wandb
+    #         args.wandb_id = wandb.util.generate_id()
+    #         with open(wandb_text_file, "a") as f:
+    #             f.write(args.wandb_id)
+    #         msg = (
+    #             "-" * 50
+    #             + "\nNew WANDB ID GENERATED\n {} \n Please use the above id for resuming\n".format(
+    #                 args.wandb_id
+    #             ) +
+    #             "-" * 50
+    #         )
+    #     logger.info(msg)
 
     testTube_logger = pl.loggers.TestTubeLogger(save_dir=log_dir,
                                                 name="TestTube_{}_{}".format(args.model, args.dataset)
                                                 )
-    if not args.train_only:
-        wandb_logger = pl.loggers.wandb.WandbLogger(name="Model: {} Datset: {} Des : {} ".format(args.model,
-                                                                                                 args.dataset,
-                                                                                                 args.wandb_name_ext, ),
-                                                    id=args.wandb_id,
-                                                    project="Thermal Segmentation",
-                                                    entity="tufts",
-                                                    offline=args.debug,
-                                                    save_dir=log_dir,
-                                                    )
+    # if not args.train_only:
+    #     wandb_logger = pl.loggers.wandb.WandbLogger(name="Model: {} Datset: {} Des : {} ".format(args.model,
+    #                                                                                              args.dataset,
+    #                                                                                              args.wandb_name_ext, ),
+    #                                                 id=args.wandb_id,
+    #                                                 project="Thermal Segmentation",
+    #                                                 entity="tufts",
+    #                                                 offline=args.debug,
+    #                                                 save_dir=log_dir,
+    #                                                 )
 
     if args.distributed_backend == "ddp":
         args.train_batch_size = max(1, int(args.train_batch_size / max(1, args.gpus)))
@@ -149,7 +149,7 @@ if "train" in args.mode:
         loggers = [testTube_logger, ]
     else:
         accelerator = args.distributed_backend
-        loggers = [testTube_logger, wandb_logger]
+        loggers = [testTube_logger, ]  # wandb_logger]
 
     trainer = pl.Trainer(default_root_dir=args.save_dir,
                          resume_from_checkpoint=args.resume,
