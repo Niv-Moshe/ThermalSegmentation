@@ -3,8 +3,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pytorch_lightning as pl
+from tqdm import tqdm
 from argparse import Namespace
 from typing import List
+from PIL import Image
 
 # from Codes.src.lightning_scripts import main
 from Codes.src.lightning_scripts.trainers import thermal_edge_trainer
@@ -142,6 +144,67 @@ def seg2edge(seg: np.ndarray, radius: int, edge_type: str):
     return idxEdge
 
 
+def plot_predictions_and_input(data_folder: str, segmented_path: str, dataset: str = 'soda', split: str = 'test'):
+    """
+    Save plots of the input image with ground truth if exists and the predicted segmented image.
+    Args:
+        data_folder: path to the folder the processed data  is stored at.
+        segmented_path: path to the folder the predicted segmented images are stored at.
+        dataset: dataset name we are using.
+        split: which split of data the segmentation is on, e.g. train, val, test.
+    """
+    image_folder = os.path.join(data_folder, 'image', split)
+    mask_color_folder = os.path.join(data_folder, 'mask_color', split)
+    mask_folder = os.path.join(data_folder, 'mask', split)
+    images = sorted(f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f)))
+
+    segmented_path = os.path.join(segmented_path, split)
+    seg_preds = sorted(f for f in os.listdir(segmented_path)
+                       if os.path.isfile(os.path.join(segmented_path, f)) and 'Pred' in str(f))
+    edges_preds = sorted(f for f in os.listdir(segmented_path)
+                         if os.path.isfile(os.path.join(segmented_path, f)) and 'Edges' in str(f))
+
+    assert len(seg_preds) == len(images)
+    save_dir = os.path.join('predictions_analysis', dataset)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    if os.path.isdir(mask_color_folder):  # if we had ground truth
+        subplots = 4
+        masks = sorted(f for f in os.listdir(mask_color_folder) if os.path.isfile(os.path.join(mask_color_folder, f)))
+    elif os.path.isdir(mask_folder):
+        subplots = 4
+        masks = sorted(f for f in os.listdir(mask_folder) if os.path.isfile(os.path.join(mask_folder, f)))
+    else:
+        subplots = 3
+        masks = None
+
+    for i in tqdm(range(len(images))):
+        current_subplot = 1
+        # saving all in one fig
+        fig, ax = plt.subplots(2, 2, figsize=(10, 8))
+        fig.tight_layout()
+        ax[0, 0].imshow(Image.open(os.path.join(image_folder, images[i])), cmap='gray')
+        ax[0, 0].set_title('Input image')
+        current_subplot += 1
+
+        ax[0, 1].imshow(Image.open(os.path.join(segmented_path, seg_preds[i])))
+        ax[0, 1].set_title('Segmentation prediction')
+        current_subplot += 1
+
+        ax[1, 0].imshow(Image.open(os.path.join(segmented_path, edges_preds[i])))
+        ax[1, 0].set_title('Edges prediction')
+        current_subplot += 1
+
+        if subplots == 4:
+            ax[1, 1].imshow(Image.open(os.path.join(mask_color_folder, masks[i])))
+            ax[1, 1].set_title('Ground truth')
+            current_subplot += 1
+
+        # saving fig
+        plt.savefig(os.path.join(save_dir, f"predictions_analysis_{images[i]}"))
+        plt.close(fig)
+
+
 if __name__ == "__main__":
     # args = Namespace(
     #     # Models
@@ -187,3 +250,9 @@ if __name__ == "__main__":
     # seg = seg[:, :, None]  # adding channel dim
     # edgeMapBin = seg2edge(seg=seg, radius=1, edge_type='regular')  # Assuming seg2edge is defined
     # plt.imsave('processed_dataset/hi.png', edgeMapBin, cmap='gray')
+
+    # current_path = os.getcwd()
+    # plot_predictions_and_input(data_folder=os.path.join('processed_dataset/Tevel'),
+    #                            segmented_path=os.path.join('tevel/Segmented_images'),
+    #                            dataset='tevel')
+    # print(os.listdir(os.path.join(current_path, 'tevel/Segmented_images/test')))
