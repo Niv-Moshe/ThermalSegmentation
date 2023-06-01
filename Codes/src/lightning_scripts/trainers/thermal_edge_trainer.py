@@ -35,7 +35,7 @@ class SegmentationLightningModel(BaseTrainer):
 
         class_map, edge_map = output
         class_map = class_map[0] if isinstance(class_map, tuple) or isinstance(class_map, list) else class_map
-        class_map = torch.argmax(class_map.long(), 1)
+        class_map = torch.argmax(class_map, 1)  # torch.argmax(class_map.long(), 1)
         edge_pred = torch.mean(
             ((edge_map > 0) == edges).float(), dim=[1, 2, 3])
 
@@ -73,7 +73,7 @@ class SegmentationLightningModel(BaseTrainer):
 
         class_map, edge_map = output
         class_map = class_map[0] if isinstance(class_map, tuple) or isinstance(class_map, list) else class_map
-        class_map = torch.argmax(class_map.long(), 1)
+        class_map = torch.argmax(class_map, 1)  # torch.argmax(class_map.long(), 1)
         edge_pred = torch.mean(((edge_map > 0) == edges).float(), dim=[1, 2, 3])
 
         self.val_edge_accuracy.update(edge_pred)
@@ -136,11 +136,12 @@ class SegmentationLightningModel(BaseTrainer):
 
         class_map, edge_map = output
         class_map = class_map[0] if isinstance(class_map, tuple) or isinstance(class_map, list) else class_map
+        # class_map.shape = (batch_size, num_classes, H, W)
         if len(batch) == 4:
             class_map = upsample_output(class_map, target)
             edge_map = upsample_output(edge_map, target)
 
-        class_map = torch.argmax(class_map.long(), 1)
+        class_map = torch.argmax(class_map, 1)  # torch.argmax(class_map.long(), 1)  # (batch_size, H, W)
         if len(batch) == 4:  # got gt, else just for inference
             edge_pred = torch.mean(((edge_map > 0) == edges).float(), dim=[1, 2, 3])
             self.test_confmat.update(preds=class_map, target=target)
