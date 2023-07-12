@@ -5,8 +5,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-mask_path = '/mnt/ACF29FC2F29F8F68/Work/Deep_Learning/Thermal_Segmentation/Dataset/InfraredSemanticLabel-20210430T150555Z-001/SODA/mask/test/'
-mask_color_path = '/mnt/ACF29FC2F29F8F68/Work/Deep_Learning/Thermal_Segmentation/Dataset/InfraredSemanticLabel-20210430T150555Z-001/SODA/mask_color/test/'
+mask_path = '/home/ilan/Desktop/Niv/ThermalSegmentation/processed_dataset/SODA/mask/test'  # '/mnt/ACF29FC2F29F8F68/Work/Deep_Learning/Thermal_Segmentation/Dataset/InfraredSemanticLabel-20210430T150555Z-001/SODA/mask/test/'
+mask_color_path = '/home/ilan/Desktop/Niv/ThermalSegmentation/processed_dataset/SODA/mask_color/test/'  # '/mnt/ACF29FC2F29F8F68/Work/Deep_Learning/Thermal_Segmentation/Dataset/InfraredSemanticLabel-20210430T150555Z-001/SODA/mask_color/test/'
 
 
 if not os.path.exists(mask_color_path):
