@@ -5,7 +5,9 @@ https://github.com/dmlc/gluon-cv/blob/master/gluoncv/data/segbase.py
 import random
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
+import torchvision.transforms as transforms
 from PIL import Image, ImageFilter, ImageOps
 
 __all__ = ['SegmentationDataset']
@@ -22,7 +24,7 @@ class SegmentationDataset(object):
         self.mode = mode if mode is not None else split
         self.base_size = base_size
         self.crop_size = crop_size
-
+        self.count = 0
         edge_radius = 7
         self.edge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT,
                                                      (edge_radius, edge_radius))
@@ -56,12 +58,25 @@ class SegmentationDataset(object):
         return img, mask, edge
 
     def _sync_transform(self, img, mask, edge, crop_size=None):
+        # np.array(img).shape = [H, W, channels=3]
+        # img is PIL image, so it works like that with the transforms without reshaping (if tensor then needed).
+        # random blur
+        if random.random() < 0.5:
+            gaussian_blur = transforms.GaussianBlur(kernel_size=9)
+            img = gaussian_blur(img)
+        # random zoom in
+        if random.random() < 0.5:
+            # scale is actually a random range to sample the crop before resizing
+            crop_resize = transforms.RandomResizedCrop(size=list(np.array(img).shape)[:-1], scale=(0.6, 0.6))
+            img = crop_resize(img)
         # random mirror
         if random.random() < 0.5:
             img = img.transpose(Image.FLIP_LEFT_RIGHT)
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
             edge = edge.transpose(Image.FLIP_LEFT_RIGHT)
-
+        # plt.imshow(img)
+        # plt.savefig(f"/home/ilan/Desktop/Niv/ThermalSegmentation/try/img_{self.count}")
+        self.count += 1
         if crop_size is None:
             crop_size = self.crop_size[0]
             base_size = self.base_size[0]
