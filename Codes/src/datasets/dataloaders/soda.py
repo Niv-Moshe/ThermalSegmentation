@@ -7,6 +7,8 @@ import os
 
 import numpy as np
 import torch
+import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
 from PIL import Image, ImageFilter
 from skimage.exposure import equalize_adapthist
 from torchvision import transforms
@@ -60,6 +62,9 @@ class SODADataset(SegmentationDataset):
 
         if self.mode == 'test':
             img = self.normalize(img)
+            # print(f"before contrast type={img.dtype}")
+            # img = transforms.functional.adjust_brightness(img, 0.8)  # less contrast
+            # print(f"after contrast type={img.dtype}")
             return img, os.path.basename(self.images[index])
 
             ''' For Training and validation purposes'''
