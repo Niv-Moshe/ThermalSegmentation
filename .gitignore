@@ -39,6 +39,7 @@ tevel/
 Training_Paper/
 lightning_logs/
 venv/
+predictions_analysis/
 
 
 # PyInstaller
