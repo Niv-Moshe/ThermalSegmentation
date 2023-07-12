@@ -25,7 +25,8 @@ class SegmentationLightningModel(BaseTrainer):
 
     def load_metrics(self, mode, num_class, ignore_index):
         setattr(self, f'{mode}_confmat', pl_ConfusionMatrix(num_classes=num_class).to(self.device))
-        setattr(self, f'{mode}_IOU', IoU(num_classes=num_class, ignore_index=ignore_index, reduction='none').to(self.device))
+        setattr(self, f'{mode}_IOU',
+                IoU(num_classes=num_class, ignore_index=ignore_index, reduction='none').to(self.device))
         setattr(self, f'{mode}_edge_accuracy', AverageMeter().to(self.device))
 
     def training_step(self, batch, batch_idx):
@@ -137,10 +138,16 @@ class SegmentationLightningModel(BaseTrainer):
         class_map, edge_map = output
         class_map = class_map[0] if isinstance(class_map, tuple) or isinstance(class_map, list) else class_map
         # class_map.shape = (batch_size, num_classes, H, W)
+        unwanted_classes = ["table", "chair", "lamp", "monitor", "trafficCone", "trash can", "river"]
+        unwanted_classes_indices = [self.test_dataset.class_names.index(label) for label in unwanted_classes]
+        unwanted_classes = [i for i in range(len(self.test_dataset.class_names))
+                            if i in unwanted_classes_indices]
+
         if len(batch) == 4:
             class_map = upsample_output(class_map, target)
             edge_map = upsample_output(edge_map, target)
-
+        # class_map[:, unwanted_classes_slicing, :, :] = -np.inf  # setting unwanted classes so they will not be chosen
+        # class_map[unwanted_classes] = 0
         class_map = torch.argmax(class_map, 1)  # torch.argmax(class_map.long(), 1)  # (batch_size, H, W)
         if len(batch) == 4:  # got gt, else just for inference
             edge_pred = torch.mean(((edge_map > 0) == edges).float(), dim=[1, 2, 3])
